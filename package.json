@@ -1,0 +1,13 @@
+{
+  "name": "sptrans-app-vercel",
+  "version": "1.0.0",
+  "description": "App SPTrans com backend Vercel",
+  "private": true,
+  "scripts": {
+    "start": "echo 'Projeto para Vercel'"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.0"
+  },
+  "type": "module"
+}
