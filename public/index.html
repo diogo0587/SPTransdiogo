@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="pt-br" class="h-full">
+<head>
+    <meta charset="UTF-R">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App SPTrans 'Olho Vivo'</title>
+    <!-- Carrega o Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilo para garantir que o app ocupe a tela toda no mobile */
+        html, body {
+            height: 100%;
+            overflow: hidden; /* Evita scroll da página principal */
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        /* Classe para o spinner */
+        .loading-spinner {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans flex flex-col h-full">
+
+    <header class="bg-gray-800 shadow-lg p-4">
+        <h1 class="text-2xl font-bold text-center text-cyan-400">SPTrans 'Olho Vivo'</h1>
+        <p class="text-center text-gray-400 text-sm">Busca de Linhas de Ônibus</p>
+    </header>
+
+    <!-- Container principal com scroll próprio -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-6">
+        
+        <!-- Formulário de Busca -->
+        <div class="max-w-2xl mx-auto">
+            <div class="relative flex items-center">
+                <input type="text" id="searchInput" placeholder="Digite o nome ou número da linha (ex: 8000)" class="w-full p-4 pr-16 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                <button id="searchButton" class="absolute right-2 p-3 bg-cyan-600 hover:bg-cyan-500 rounded-lg text-white transition-colors duration-200">
+                    <!-- Ícone de Busca -->
+                    <svg id="searchIcon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <!-- Ícone de Loading (Spinner) - inicialmente escondido -->
+                    <svg id="loadingSpinner" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="loading-spinner hidden"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Área de Resultados -->
+        <div id="resultsContainer" class="max-w-2xl mx-auto mt-6">
+            <!-- Mensagens de estado (erro ou inicial) -->
+            <div id="message" class="text-center text-gray-500 p-8">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2"><path d="M14.5 18a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5h-10a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h10z"></path><path d="M19 8h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-1"></path><path d="M16 12h.01"></path><path d="M16 15h.01"></path><path d="M7 12h.01"></path><path d="M7 15h.01"></path></svg>
+                Os resultados da busca aparecerão aqui.
+            </div>
+            <!-- Os resultados serão inseridos aqui pelo JavaScript -->
+        </div>
+
+    </main>
+
+    <script>
+        // Referências aos elementos da UI
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const message = document.getElementById('message');
+        const searchIcon = document.getElementById('searchIcon');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+
+        // Adiciona o evento de clique ao botão de busca
+        searchButton.addEventListener('click', handleSearch);
+        // Permite buscar pressionando "Enter"
+        searchInput.addEventListener('keyup', (event) => {
+            if (event.key === 'Enter') {
+                handleSearch();
+            }
+        });
+
+        async function handleSearch() {
+            const termosBusca = searchInput.value.trim();
+
+            if (termosBusca === "") {
+                showMessage("Por favor, digite um termo de busca.", "error");
+                return;
+            }
+
+            setLoading(true);
+            resultsContainer.innerHTML = ''; // Limpa resultados anteriores
+
+            try {
+                // =================================================================
+                // CHAMADA REAL AO BACKEND (Serverless Function)
+                // =================================================================
+                // O front-end chama o nosso próprio backend na Vercel
+                // que está em /api/buscar.
+                const response = await fetch(`/api/buscar?termos=${encodeURIComponent(termosBusca)}`);
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Falha ao buscar dados do servidor.');
+                }
+                
+                const data = await response.json();
+
+                if (data.length === 0) {
+                     showMessage("Nenhuma linha encontrada para o termo: " + termosBusca, "info");
+                } else {
+                    displayResults(data);
+                }
+
+            } catch (error) {
+                console.error("Erro ao buscar:", error);
+                showMessage(error.message || "Ocorreu um erro ao buscar as linhas. Tente novamente.", "error");
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function displayResults(data) {
+            // Limpa a mensagem inicial
+            if (document.getElementById('message')) {
+                document.getElementById('message').remove();
+            }
+            
+            resultsContainer.innerHTML = ''; // Limpa resultados anteriores
+            
+            data.forEach(linha => {
+                // cl: Código da Linha
+                // lt: Letreiro (número)
+                // tp: Terminal Principal
+                // ts: Terminal Secundário
+                // sl: Sentido (1 = Ida, 2 = Volta)
+                
+                const sentido = linha.sl === 1 ? `${linha.tp} ➔ ${linha.ts}` : `${linha.ts} ➔ ${linha.tp}`;
+                
+                const card = `
+                    <div class="bg-gray-800 p-4 rounded-lg shadow-md mb-3 border-l-4 ${linha.sl === 1 ? 'border-cyan-500' : 'border-purple-500'}">
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-bold text-white">${linha.lt}</span>
+                            <span class="text-sm font-medium ${linha.sl === 1 ? 'text-cyan-400' : 'text-purple-400'}">
+                                ${linha.sl === 1 ? 'Sentido Ida' : 'Sentido Volta'}
+                            </span>
+                        </div>
+                        <p class="text-gray-300 mt-2 text-sm">${sentido}</p>
+                    </div>
+                `;
+                resultsContainer.innerHTML += card;
+            });
+        }
+
+        function showMessage(msg, type = "info") {
+            let icon = '';
+            let color = 'text-gray-500';
+
+            if (type === 'error') {
+                icon = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
+                color = 'text-red-400';
+            } else {
+                icon = '<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-2"><path d="M14.5 18a.5.5 0 0 0 .5-.5v-11a.5.5 0 0 0-.5-.5h-10a.5.5 0 0 0-.5.5v11a.5.5 0 0 0 .5.5h10z"></path><path d="M19 8h1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1v-1"></path><path d="M16 12h.01"></path><path d="M16 15h.01"></path><path d="M7 12h.01"></path><path d="M7 15h.01"></path></svg>';
+                color = 'text-gray-500';
+            }
+
+            resultsContainer.innerHTML = `
+                <div class="${color} p-8 text-center">
+                    ${icon}
+                    ${msg}
+                </div>
+            `;
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                searchButton.disabled = true;
+                searchIcon.classList.add('hidden');
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                searchButton.disabled = false;
+                searchIcon.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+    </script>
+</body>
+</html>
+
