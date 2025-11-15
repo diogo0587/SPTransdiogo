@@ -1,8 +1,3 @@
-/**
- * ESTE É O SEU BACKEND.
- * Ele será executado pela Vercel como uma "Serverless Function".
- * O nome do arquivo (buscar.js) define a rota (/api/buscar).
- */
 export default async function handler(request, response) {
     const API_KEY = process.env.SPTRANS_API_KEY;
     const { termos } = request.query;
