@@ -1,0 +1,42 @@
+# Nome do Workflow
+name: Deploy to Vercel
+
+# Gatilho (Trigger)
+# Isso faz o Action rodar automaticamente toda vez que
+# você enviar (push) código para a branch 'main'.
+on:
+  push:
+    branches:
+      - main
+
+# Tarefas (Jobs)
+jobs:
+  deploy-to-vercel:
+    # Usar a versão mais recente do Ubuntu
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Baixa o código do seu repositório para o ambiente do Action
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      # 2. Executa a Vercel Action oficial
+      # Esta Action cuida de tudo: build, deploy e configuração de env vars.
+      - name: Deploy to Vercel
+        uses: vercel/vercel-action@v3
+        with:
+          # --- Autenticação da Vercel (Obrigatório) ---
+          # Estes são "Secrets" que você deve configurar no GitHub
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+
+          # --- Variáveis de Ambiente do seu App (Obrigatório) ---
+          # Isso injeta a sua chave da SPTrans no projeto da Vercel
+          # O backend (api/buscar.js) vai ler isso como process.env.SPTRANS_API_KEY
+          env-vars: |
+            SPTRANS_API_KEY=${{ secrets.SPTRANS_API_KEY }}
+            
+          # --- Configuração de Deploy ---
+          # Diz para a Vercel que este é um deploy de produção (atualiza o link principal)
+          production: true
