@@ -17,7 +17,7 @@ export default async function handler(request, response) {
 
     try {
         // --- PASSO 1: Autenticar na SPTrans para obter o cookie ---
-        const authUrl = `https://api.olhovivo.sptrans.com.br/Login/Autenticar?token=${API_KEY}`;
+        const authUrl = `https://api.olhovivo.sptrans.com.br/v2.1/Login/Autenticar?token=${API_KEY}`;
         const authResponse = await fetch(authUrl, {
             method: 'POST'
         });
