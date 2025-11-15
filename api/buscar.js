@@ -1,5 +1,5 @@
 export default async function handler(request, response) {
-    const API_KEY = process.env.SPTRANS_API_KEY;
+    const API_KEY = "efea508f6acbc1219959df3033f59c1d50e45b7590dc446204cfe04a2476a4ef";
     const { termos } = request.query;
 
     if (!API_KEY) {
