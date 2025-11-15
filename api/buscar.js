@@ -42,7 +42,7 @@ export default async function handler(request, response) {
     
     try {
         // --- PASSO 2: Buscar a linha usando o cookie de autenticação ---
-        const searchUrl = `https://api.olhovivo.sptrans.com.br//v2.1/Linha/Buscar?termosBusca=${encodeURIComponent(termos)}`;
+        const searchUrl = `https://api.olhovivo.sptrans.com.br/v2.1/Linha/Buscar?termosBusca=${encodeURIComponent(termos)}`;
         
         const searchResponse = await fetch(searchUrl, {
             method: 'GET',
